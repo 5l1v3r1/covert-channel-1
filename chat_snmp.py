@@ -14,9 +14,11 @@ from Tkinter import *
 from PIL import ImageTk, Image
 
 ## GLOBALS
-COMMUNITY = "UBAMSI"    # Community to use for communication.
-PORT = 162              # Port to use for communication.
-TRAPID = 14452          # ID of the SNMP trap.
+COMMUNITY = "UBAMSI"        # Community to use for communication.
+PORT = 162                  # Port to use for communication.
+TRAPID = 14452              # ID of the SNMP trap.
+SHIFT_CIPHER = 3            # Number of shifts for encryption/decryption.
+ALPHABET = string.printable # Alphabet to use in the chat.
 
 ## CLASSES
 # This class manage the SNMP connection.
@@ -25,6 +27,7 @@ class SNMPManager:
         self.ip_local = ip_local
         self.ip_destination = ip_destination
         self.master = None
+        self.cipher = CaesarCipher(SHIFT_CIPHER)
 
     # This func converts a text in a valid OID.
     def convertMsg(self, message):
@@ -41,7 +44,8 @@ class SNMPManager:
 
     # This func sends our new message.
     def sendMsg(self, text):
-        oid = self.convertMsg(text)
+        encryptedText = self.cipher.encrypt(text)
+        oid = self.convertMsg(encryptedText)
         packet = IP(dst=self.ip_destination)/UDP(sport=RandShort(),dport=PORT)/SNMP(community=COMMUNITY,PDU=SNMPtrapv2(id=TRAPID,varbindlist=[SNMPvarbind(oid=ASN1_OID(oid))]))
         send(packet, verbose=0)
 
@@ -63,15 +67,16 @@ class SNMPManager:
                 else:
                     b = l[i]
                     a = a + b
+            decryptedText = self.cipher.decrypt(message)
             self.master.chatContainer.configure(state='normal')
-            if message == " q":
-                message = "- Encubierto se ha desconectado -\n"
-                self.master.chatContainer.insert(END, message, "bold")
+            if decryptedText == " q":
+                decryptedText = "- Encubierto se ha desconectado -\n"
+                self.master.chatContainer.insert(END, decryptedText, "bold")
             else:
                 self.master.chatContainer.insert(END, " > Encubierto:", "bold")
-                self.master.chatContainer.insert(END, message)
-                message = "Encubierto:" + message
-            print ("\t" + message)
+                self.master.chatContainer.insert(END, decryptedText)
+                decryptedText = "Encubierto:" + decryptedText
+            print ("\t" + decryptedText)
             self.master.chatContainer.configure(state=DISABLED)
             self.master.chatContainer.see(END)
         return sndr
@@ -157,8 +162,22 @@ class ChatGUI:
 
 # This class encrypts and decrypts the messages.
 class CaesarCipher:
-    def __init__(self):
-        pass
+    def __init__(self, shift):
+        self.alphabet = ALPHABET
+        self.encrypt_alphabet = self.alphabet[shift:] + self.alphabet[:shift]
+        self.decrypt_alphabet = self.alphabet[-shift:] + self.alphabet[:-shift]
+
+    def encrypt(self, plaintext):
+        table = string.maketrans(self.alphabet, self.encrypt_alphabet)
+        ciphertext = str(plaintext).translate(table)
+        print("Cipher: " + ciphertext)
+        return ciphertext
+
+    def decrypt(self, ciphertext):
+        table = string.maketrans(self.alphabet, self.decrypt_alphabet)
+        plaintext = str(ciphertext).translate(table)
+        print("Decrypted: " + plaintext)
+        return plaintext
 
 ## MAIN
 if __name__ == "__main__":
