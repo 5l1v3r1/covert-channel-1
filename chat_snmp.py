@@ -46,6 +46,8 @@ class SNMPManager:
     # This func sends our new message.
     def sendMsg(self, text):
         encryptedText = self.cipher.encrypt(text)
+        if (text != "q"):
+            print("* Tu: " + text.strip())
         oid = self.convertMsg(encryptedText)
         packet = IP(dst=self.ip_destination)/UDP(sport=RandShort(),dport=PORT)/SNMP(community=COMMUNITY,PDU=SNMPtrapv2(id=TRAPID,varbindlist=[SNMPvarbind(oid=ASN1_OID(oid))]))
         send(packet, verbose=0)
@@ -54,7 +56,7 @@ class SNMPManager:
     def snmp_values(self):
         def sndr(pkt):
             a = " "
-            message = " "
+            message = ""
             pl = pkt[SNMP].community.val
             od = str(pl)
             s = pkt[SNMPvarbind].oid.val
@@ -70,14 +72,14 @@ class SNMPManager:
                     a = a + b
             decryptedText = self.cipher.decrypt(message)
             self.master.chatContainer.configure(state='normal')
-            if decryptedText == " q":
+            if decryptedText == "q":
                 decryptedText = "- Encubierto se ha desconectado -\n"
                 self.master.chatContainer.insert(END, decryptedText, "bold")
             else:
-                self.master.chatContainer.insert(END, " > Encubierto:", "bold")
+                self.master.chatContainer.insert(END, " > Encubierto: ", "bold")
                 self.master.chatContainer.insert(END, decryptedText)
-                decryptedText = "Encubierto:" + decryptedText
-            print ("\t" + decryptedText)
+                decryptedText = "Encubierto: " + decryptedText.strip()
+            print ("* " + decryptedText)
             self.master.chatContainer.configure(state=DISABLED)
             self.master.chatContainer.see(END)
         return sndr
@@ -135,10 +137,18 @@ class ChatGUI:
         self.sendButton.config(highlightbackground="dark slate gray",activebackground="dark slate gray")
         self.sendButton.grid(row=0, column=1, sticky='nsew', padx=5, pady=5)
 
+    def validCharacters(self, text):
+        if text.strip() == "q":
+            return False
+        for character in text:
+            if character not in ALPHABET:
+                return False
+        return True
+
     # This func is called when the SEND button is clicked.
     def sendClicked(self):
         textToSend = self.messageContainer.get("1.0",END)
-        if textToSend and textToSend.strip():
+        if textToSend.strip() and self.validCharacters(textToSend):
             self.messageContainer.delete('1.0', END)
             self.chatContainer.configure(state='normal')
             self.chatContainer.insert(END, " > Tu: ","bold")
@@ -146,7 +156,6 @@ class ChatGUI:
             self.chatContainer.configure(state=DISABLED)
             self.chatContainer.see(END)
             self.snmpConn.sendMsg(textToSend)
-            print("\tTu: " + textToSend)
 
     # This func is called when the CLOSE button is clicked.
     def closeConnection(self):
@@ -171,13 +180,11 @@ class CaesarCipher:
     def encrypt(self, plaintext):
         table = string.maketrans(self.alphabet, self.encrypt_alphabet)
         ciphertext = str(plaintext).translate(table)
-        print("Cipher: " + ciphertext)
         return ciphertext
 
     def decrypt(self, ciphertext):
         table = string.maketrans(self.alphabet, self.decrypt_alphabet)
         plaintext = str(ciphertext).translate(table)
-        print("Decrypted: " + plaintext)
         return plaintext
 
 ## MAIN
