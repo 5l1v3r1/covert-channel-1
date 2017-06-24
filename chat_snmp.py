@@ -12,6 +12,7 @@ logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 import argparse
 from Tkinter import *
 from PIL import ImageTk, Image
+from string import *
 
 ## GLOBALS
 COMMUNITY = "UBAMSI"        # Community to use for communication.
