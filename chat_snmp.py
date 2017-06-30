@@ -2,20 +2,17 @@
 # AUTHORS: Agustina Sgrinzi, Ignacio Bernardi & Matias Sena
 # VERSION: 1.0
 
-from scapy.all import *
-import Queue
-import time
-from threading import Thread
-import sys
 import logging
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
+from scapy.all import *
+from threading import Thread
+import sys
 import argparse
 from Tkinter import *
 from PIL import ImageTk, Image
 import string
 
 ## GLOBALS
-COMMUNITY = "UBAMSI"        # Community to use for communication.
 PORT = 162                  # Port to use for communication.
 TRAPID = 14452              # ID of the SNMP trap.
 SHIFT_CIPHER = 3            # Number of shifts for encryption/decryption.
@@ -24,16 +21,15 @@ ALPHABET = string.printable # Alphabet to use in the chat.
 ## CLASSES
 # This class manage the SNMP connection.
 class SNMPManager:
-    def __init__(self, ip_local, ip_destination):
+    def __init__(self, ip_local, ip_destination, community):
         self.ip_local = ip_local
         self.ip_destination = ip_destination
+        self.community = community
         self.master = None
         self.cipher = CaesarCipher(SHIFT_CIPHER)
 
     # This func converts a text in a valid OID.
     def convertMsg(self, message):
-        #if len(message) > 128:
-            #print "es grande"
         oid = "1.3" # All OID sent start with 1.3
         for count in range (0, len(message)):
             des = str (ord(message[count]))
@@ -49,7 +45,7 @@ class SNMPManager:
         if (text != "q"):
             print("* Tu: " + text.strip())
         oid = self.convertMsg(encryptedText)
-        packet = IP(dst=self.ip_destination)/UDP(sport=RandShort(),dport=PORT)/SNMP(community=COMMUNITY,PDU=SNMPtrapv2(id=TRAPID,varbindlist=[SNMPvarbind(oid=ASN1_OID(oid))]))
+        packet = IP(dst=self.ip_destination)/UDP(sport=RandShort(),dport=PORT)/SNMP(community=self.community,PDU=SNMPtrapv2(id=TRAPID,varbindlist=[SNMPvarbind(oid=ASN1_OID(oid))]))
         send(packet, verbose=0)
 
     # This func is called when a new SNMP packet arrives.
@@ -191,32 +187,27 @@ class CaesarCipher:
 if __name__ == "__main__":
     # Check if the script is run with ROOT.
     if os.getuid() != 0:
-        print("El chat debe ser ejecutado como ROOT.")
+        print("[!] El covert channel debe ser ejecutado como ROOT.")
         sys.exit(1)
     # Check needed arguments.
-    parser = argparse.ArgumentParser(description='Esta herramienta es un chat encubierto (covert channel) tipo client-to-client que utiliza el protocolo SNMP para intercambiar la informacion a traves de los OID en los paquetes tipo get-request. Para su uso es necesario que obligatoriamente defina tanto la IP origen (-l) asi como la IP destino (-d).')
-    parser.add_argument('-d', action="store",dest='IP_DESTINO', help=' IP destino')
-    parser.add_argument('-l', action="store",dest='IP_LOCAL', help='IP local')
+    parser = argparse.ArgumentParser(description='Esta herramienta es un covert channel tipo client-to-client que utiliza el protocolo SNMP para intercambiar la informacion.')
+    parser._action_groups.pop()
+    required = parser.add_argument_group('Required arguments')
+    optional = parser.add_argument_group('Optional arguments')
+    required.add_argument('-l', action="store", dest='IP_LOCAL', help='direccion IP de origen', required=True)
+    required.add_argument('-d', action="store", dest='IP_DESTINO', help='direccion IP con la que se va a comunicar', required=True)
+    optional.add_argument('-c', action="store",dest='COMMUNITY', help='valor de la comunidad SNMP')
     args = parser.parse_args()
-    if len(sys.argv) != 5: # Obliga a mostrar el texto del 'help' sino hay argumentos ingresados.
-        parser.print_help()
-        sys.exit(1)
     args = vars(args) # Convierte los argumentos en formato diccionario para facil manejo.
-    # Check arg destination IP.
-    if args['IP_DESTINO'] == None:
-        print "[!] Ingrese la direccion IP con la que se va comunicar, con el parametro -d."
-        sys.exit(1)
-    else:
-        ip_destination = args['IP_DESTINO']
-    # Check arg local IP.
-    if args['IP_LOCAL'] == None:
-        print "[!] Ingrese su direccion IP, con el parametro -l."
-        sys.exit(1)
-    else:
-        ip_local = args['IP_LOCAL']
+    # Store parameters in variables.
+    ip_destination = args['IP_DESTINO']
+    ip_local = args['IP_LOCAL']
+    community = "UBAMSI"
+    if args['COMMUNITY'] != None:
+        community = args['COMMUNITY']
     print("[-] Covert Channel Chat ha iniciado.")
     # Set the two needed objects.
-    snmpConn = SNMPManager(ip_local, ip_destination)
+    snmpConn = SNMPManager(ip_local, ip_destination, community)
     root = Tk()
     chatInterface = ChatGUI(root, snmpConn)
     snmpConn.master = chatInterface
