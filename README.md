@@ -5,7 +5,15 @@ This script is a client-to-client chat and the messages travel by a covert chann
 This script has been developed to fulfill a practical work of the subject Network Security I, part of the UBA's Information Security career. It is for academic purposes.
 
 ## Installation
-There is not any prerequisites needed to run the script.
+Install the requirements needed through this command:
+```
+pip install -r requirements.txt
+```
+
+In addition, Tkinter is needed:
+```
+apt-get install python-tk
+```
 
 ## Usage
 To run the script, just execute the following command in the directory where you downloaded this repository.
