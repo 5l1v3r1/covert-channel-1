@@ -190,17 +190,17 @@ if __name__ == "__main__":
         print("[!] El covert channel debe ser ejecutado como ROOT.")
         sys.exit(1)
     # Check needed arguments.
-    parser = argparse.ArgumentParser(description='Esta herramienta es un covert channel tipo client-to-client que utiliza el protocolo SNMP para intercambiar la informacion.')
+    parser = argparse.ArgumentParser(description='Este script ha sido desarrollado como parte de un trabajo practico de la materia Seguridad en Redes I, carrera Maestria en Seguridad Informatica de la UBA. Es para propositos academicos unicamente.')
     parser._action_groups.pop()
-    required = parser.add_argument_group('Required arguments')
-    optional = parser.add_argument_group('Optional arguments')
+    required = parser.add_argument_group('Argumentos obligatorios')
+    optional = parser.add_argument_group('Argumentos opcionales')
     required.add_argument('-l', action="store", dest='IP_LOCAL', help='direccion IP de origen', required=True)
-    required.add_argument('-d', action="store", dest='IP_DESTINO', help='direccion IP con la que se va a comunicar', required=True)
+    required.add_argument('-d', action="store", dest='IP_DESTINATION', help='direccion IP con la que se va a comunicar', required=True)
     optional.add_argument('-c', action="store",dest='COMMUNITY', help='valor de la comunidad SNMP')
     args = parser.parse_args()
     args = vars(args) # Convierte los argumentos en formato diccionario para facil manejo.
     # Store parameters in variables.
-    ip_destination = args['IP_DESTINO']
+    ip_destination = args['IP_DESTINATION']
     ip_local = args['IP_LOCAL']
     community = "UBAMSI"
     if args['COMMUNITY'] != None:
