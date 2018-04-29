@@ -30,9 +30,9 @@ sudo python chat_snmp.py -l 192.168.0.10 -d 192.168.0.86 -c SECURITY
 
 
 ## Authors
-* Bernardi, Ignacio David
-* Sena, Matias Ezequiel
-* Sgrinzi, Agustina Elisabet
+* Bernardi
+* Sena
+* Sgrinzi
 
 ## Relevant links
 For more information about this covert channel, you can visit the following websites:
